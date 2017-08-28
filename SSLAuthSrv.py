@@ -19,6 +19,7 @@ class TestHandler(BaseHTTPRequestHandler):
     key = ''
     index = None
     indexhtml = None
+    FileObject = None
     EnableFileRead = False
     
     #def __init__(self):
@@ -39,7 +40,7 @@ class TestHandler(BaseHTTPRequestHandler):
         """Serve a GET request."""
         f = self.send_head()
         if f:
-            self.copyfile(f, self.wfile)#THIS IS WHERE THE HMTL/DATA IS ACTUALLY SENT TO CLIENT!!!!
+            self.copyfile(f, self.FileObject)#THIS IS WHERE THE HMTL/DATA IS ACTUALLY SENT TO CLIENT!!!!
             f.close()
 
     def do_HEAD(self):
@@ -47,6 +48,35 @@ class TestHandler(BaseHTTPRequestHandler):
         f = self.send_head()
         if f:
             f.close()
+
+    def parseURI():
+        #parse URI
+        o = urlparse.urlparse(self.path)
+        if o.path.lower() == '/' or o.path.lower() == '/index.html' or o.path.lower() == '/index.htm':#preloaded main index
+            if self.indexhtml != None:
+                f = self.indexhtml
+                pass
+            else:
+                self.send_error(404, "File not found - C")
+                return Nonem
+            
+        if o.path.lower() in pages and self.EnableFileRead == True:
+            if o.path.lower() == '/home':
+                i = 'home.html'
+            elif o.path.lower() == '/about':
+                i = 'about.html'
+            elif o.path.lower() == '/news':
+                i = 'news.html'
+            elif o.path.lower() == '/blog':
+                i = 'blog.html'
+            elif o.path.lower() == '/contact': #complaints page with picture upload
+                i = 'contact.html'
+            try:
+                f = self.GetFile(i, 'r')
+                pass
+            except IOError:
+                self.send_error(404, "File not found - B") #needed because open I/O errors may happen even when file exists
+                return None
 
     def send_head(self):
         """Common code for GET and HEAD commands.
@@ -67,33 +97,8 @@ class TestHandler(BaseHTTPRequestHandler):
             self.do_AUTHHEAD()
             return None
 
-        #parse URI
-        o = urlparse.urlparse(self.path)
-        if o.path.lower() == '/' or o.path.lower() == '/index.html' or o.path.lower() == '/index.htm':#preloaded main index
-            if self.indexhtml != None:
-                f = self.indexhtml
-                pass
-            else:
-                self.send_error(404, "File not found - C")
-                return None
+        #former parse URI
 
-        if o.path.lower() in pages and self.EnableFileRead == True:
-            if o.path.lower() == '/home':
-                i = 'home.html'
-            elif o.path.lower() == '/about':
-                i = 'about.html'
-            elif o.path.lower() == '/news':
-                i = 'news.html'
-            elif o.path.lower() == '/blog':
-                i = 'blog.html'
-            elif o.path.lower() == '/contact': #complaints page with picture upload
-                i = 'contact.html'
-            try:
-                f = open(i, 'r')
-                pass
-            except IOError:
-                self.send_error(404, "File not found - B") #needed because open I/O errors may happen even when file exists
-                return None
 
         #Create index file object
         self.send_response(200)
