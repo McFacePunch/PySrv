@@ -1,5 +1,4 @@
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-from SimpleHTTPServer import SimpleHTTPRequestHandler #for testing around complete server
 import ssl, urllib, urlparse
 import sys, os, shutil, base64, posixpath
 
@@ -53,7 +52,7 @@ class TestHandler(BaseHTTPRequestHandler):
         #parse URI
         o = urlparse.urlparse(self.path)
         if o.path.lower() == '/' or o.path.lower() == '/index.html' or o.path.lower() == '/index.htm':#preloaded main index
-            if self.indexhtml != None:
+            if self.indexhtml != None
                 f = self.indexhtml
                 pass
             else:
@@ -77,6 +76,7 @@ class TestHandler(BaseHTTPRequestHandler):
             except IOError:
                 self.send_error(404, "File not found - B") #needed because open I/O errors may happen even when file exists
                 return None
+            return f
 
     def send_head(self):
         """Common code for GET and HEAD commands.
@@ -94,7 +94,7 @@ class TestHandler(BaseHTTPRequestHandler):
         if self.headers.getheader('Authorization') == 'Basic '+self.key: #Found basic auth header, if valid pass else return auth header
             pass
         else:
-            self.do_AUTHHEAD()
+            self.do_AUTHEDHEADER()
             return None
 
         #former parse URI
