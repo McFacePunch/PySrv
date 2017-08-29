@@ -18,7 +18,7 @@ except ImportError:
 #Info!
 #A mostly simple HTTP server, now with features!
 ###########################
-#Features working:NOTHING!
+#Features working:NOTHING! First to fix are parseURI and
 #To Fix: Webserver without serving your drive, adds Basic Auth, SSL(with OpenSSL),
 #Todo: multi-page director, digest auth, do_POST() all the things, log request, log error
 ###########################
@@ -51,7 +51,7 @@ class TestHandler(BaseHTTPRequestHandler):
         self.send_header('Content-type', 'text/html')
         self.end_headers()#Sends a blank line, indicating the end of the HTTP headers in the response
 
-    def do_HEAD(self):
+    def do_200(self):
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
@@ -60,7 +60,6 @@ class TestHandler(BaseHTTPRequestHandler):
         """Serve a GET request."""
         self.logic()
         
-
     def do_HEAD(self):
         """Serve a HEAD request."""
         self.logic(head=True)
@@ -100,19 +99,37 @@ class TestHandler(BaseHTTPRequestHandler):
         page,challenge = self.parseURI()
         
         if challenge == 1:
-            if self.headers.getheader('Authorization') == 'Basic '+self.key: #if valid pass else return auth header
+            #do_AuthenticateHeader()
+            #if self.headers.getheader('Authorization') == 'Basic '+self.key: #if valid pass else return auth header
+                #pass
+            if self.headers.getheader('Authorization') == None:
+                self.do_AuthenticateHeader()
+                #self.wfile.write('no auth header received')
+                self.send_error(404, "File not found")
+                return None
+            elif self.headers.getheader('Authorization') == 'Basic '+key:
+                self.do_HEAD()
+                self.wfile.write('authenticated!')
+                pass
+            else:#likely failed password
+                self.do_AuthenticateHeader()
+                #self.send_error(404, "File not found")
+                #self.wfile.write('not authenticated')
                 pass
         else:
-            self.do_AUTHEDHEADER() #Failz
+            self.send_error(404, "File not found")#Failz
             return None
+
+        #Give 200 OK
+        self.do_200()
         
         #Write data to client
         if page and head == True:
-            self.copyfile(f, self.wfile)#wfile Contains the output stream for writing a response back to the client. Proper adherence to the HTTP protocol must be used when writing to this stream.
-            f.close()
+            self.copyfile(page, self.wfile)#wfile Contains the output stream for writing a response back to the client. Proper adherence to the HTTP protocol must be used when writing to this stream.
+            #May need to write differently now,
+            #self.wfile.write
         
-        self.do_HEAD()
-        return f
+        return page
     
     def translate_path(self, path):
         """Translate a /-separated PATH to the local filename syntax.
