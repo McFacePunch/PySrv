@@ -36,14 +36,19 @@ class TestHandler(BaseHTTPRequestHandler):
     ''' Main class to present webpages and authentication. '''
     key = ''
     SrvObject = None
-    EnableFileRead = False
+    EnableFileRead = True
     indexhtml = None
     home = None
     about = None
     news = None
     blog = None
     contact = None
-    pages = ['/index', '/home', '/about', '/news', '/blog', '/contact']#registered pages; eventually a .cfg maybe
+    pages = {}#registered pages; eventually a .cfg maybe
+    
+#content type examples
+#self.send_header('Content-type', 'text/html')
+#self.send_header("Content-type", 'text/plain')
+#self.send_header("Content-type", 'application/octet-stream')
     
     def do_AuthenticateHeader(self):
         self.send_response(401)
@@ -58,123 +63,99 @@ class TestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         """Serve a GET request."""
-        self.logic()
+        self.logic(head=False)
         
     def do_HEAD(self):
         """Serve a HEAD request."""
-        self.logic(head=True)
+        self.logic()
 
     def parseURI(self):
+        i = {}
         #parse URI
-        #Use cache not disk
+        print(self.path)
         o = urlparse(self.path)
-        if o.path.lower() == '/' or o.path.lower() == '/index.html' or o.path.lower() == '/index.htm':#preloaded main index
-            if self.indexhtml != None:
-                i = self.indexhtml
-                pass
-            else:
-                self.send_error(404, "File not found")
-                return None
-            
         #choose page    
-        if o.path.lower() in pages and self.EnableFileRead == True:
-            if o.path.lower() == '/home':
-                i = home,1
+        if o.path.lower():# in self.pages and self.EnableFileRead == True:
+            if o.path.lower() == '/' or o.path.lower() == '/index.html':
+                i = self.pages['index'],0
+            elif o.path.lower() == '/home':
+                i = self.pages['home'],1
             elif o.path.lower() == '/about':
-                i = about,0
+                i = self.pages['about'],0
             elif o.path.lower() == '/news':
-                i = news,0
+                i = self.pages['news'],0
             elif o.path.lower() == '/blog':
-                i = blog,0
+                i = self.pages['blog'],0
             elif o.path.lower() == '/contact': #complaints page with picture upload
-                i = contact,0
+                i = self.pages['contact'],0
             else:
-                self.send_error(404, "File not found")
-                return None
-            return i #return tuple of page,challenge
+                return None,None
+        return i #return tuple of page,challenge
 
-    def logic(self, head=False):
+    def logic(self, head=True):
         page = None
-        
         page,challenge = self.parseURI()
         
         if challenge == 1:
-            #do_AuthenticateHeader()
-            #if self.headers.getheader('Authorization') == 'Basic '+self.key: #if valid pass else return auth header
-                #pass
             if self.headers.getheader('Authorization') == None:
                 self.do_AuthenticateHeader()
-                #self.wfile.write('no auth header received')
                 self.send_error(404, "File not found")
-                return None
+                return
             elif self.headers.getheader('Authorization') == 'Basic '+key:
-                self.do_HEAD()
-                self.wfile.write('authenticated!')
                 pass
             else:#likely failed password
                 self.do_AuthenticateHeader()
-                #self.send_error(404, "File not found")
-                #self.wfile.write('not authenticated')
-                pass
-        else:
-            self.send_error(404, "File not found")#Failz
-            return None
+                self.send_error(404, "File not found")
+                return
 
         #Give 200 OK
         self.do_200()
         
         #Write data to client
-        if page and head == True:
-            self.copyfile(page, self.wfile)#wfile Contains the output stream for writing a response back to the client. Proper adherence to the HTTP protocol must be used when writing to this stream.
-            #May need to write differently now,
-            #self.wfile.write
-        
-        return page
-    
-    def translate_path(self, path):
-        """Translate a /-separated PATH to the local filename syntax.
-
-        Components that mean special things to the local file system
-        (e.g. drive or directory names) are ignored.  (XXX They should
-        probably be diagnosed.)"""
-        path = posixpath.normpath(urllib.unquote(path))
-        words = path.split('/')
-        words = filter(None, words)
-        path = os.getcwd()
-        for word in words:
-            drive, word = os.path.splitdrive(word)
-            head, word = os.path.split(word)
-            if word in (os.curdir, os.pardir): continue
-            path = os.path.join(path, word)
-        return path
-
-    def copyfile(self, source, outputfile):
-        shutil.copyfileobj(source, outputfile)
-
-    def BuildPageCache():
-        blobs = []
-        for page in self.pages: #internal registered pages; eventually a .cfg maybe
-            pagename = page.strip('/')
-            dirlist = os.listdir()
-            for filename in dirlist:
-                if pagename in filename:
-                    with open(filename,'rb') as file:
-                        out = file.read()
-                        TupleOut = pagename,out
-                        blobs.append(TupleOut)
-                else:
-                    pass
-        #tuple filling here
-        self.indexhtml = None
-        self.home = None
-        self.about = None
-        self.news = None
-        self.blog = None
-        self.contact = None
+        if page != None and head == False:
+            self.do_200()
+            print(page)
+            self.wfile.write(page)
         return
+
+    def copyfile(self, source, outputfile): #not used now but may be later
+        shutil.copyfileobj(source, outputfile)
 
 class ThreadedHTTPServer(TMI, HTTPServer):
     """Handle requests in a separate thread."""
+
+#Make dict from files
+def BuildPageCache():
+    odict = {}
+    blobs = []
+    pages = []
+    
+    with open("index.html","rb") as ifile:
+        blobs.append(ifile.read())
+        pages.append('index')
+        
+    with open("home.html","rb") as ifile:
+        blobs.append(ifile.read())
+        pages.append('home')
+        
+    with open("about.html","rb") as ifile:
+        blobs.append(ifile.read())
+        pages.append('about')
+        
+    with open("news.html","rb") as ifile:
+        blobs.append(ifile.read())
+        pages.append('news')
+        
+    with open("blog.html","rb") as ifile:
+        blobs.append(ifile.read())
+        pages.append('blog')
+         
+    with open("contact.html","rb") as ifile:
+        blobs.append(ifile.read())
+        pages.append('contact')
+    
+    odict = dict(zip(pages,blobs))
+    return odict
 
 #content type examples
 #self.send_header('Content-type', 'text/html')
@@ -185,7 +166,7 @@ if __name__ == '__main__':
     key = base64.b64encode(b"cookie:cookie")#sys.argv[1])
     TH = TestHandler
     TH.key = key
-    TH.BuildPageCache
+    TH.pages = BuildPageCache()
     #httpd = HTTPServer(('localhost', 80), TH)
     httpd = ThreadedHTTPServer(('localhost', 80), TH)
     #httpd.socket = ssl.wrap_socket (httpd.socket, keyfile='server1.key', certfile='server1.cert', server_side=True)
