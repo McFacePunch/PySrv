@@ -18,9 +18,8 @@ except ImportError:
 #Info!
 #A mostly simple HTTP server, now with features!
 ###########################
-#Features working:NOTHING! First to fix are parseURI and
-#To Fix: Webserver without serving your drive, adds Basic Auth, SSL(with OpenSSL),
-#Todo: multi-page director, digest auth, do_POST() all the things, log request, log error
+#Features working:Webserver without serving your drive, adds Basic Auth, SSL(with OpenSSL),
+#Todo: digest auth, do_POST() all the things, log request, log error
 ###########################
 
 #Notes:
@@ -36,19 +35,13 @@ class TestHandler(BaseHTTPRequestHandler):
     ''' Main class to present webpages and authentication. '''
     key = ''
     SrvObject = None
-    EnableFileRead = True
-    indexhtml = None
-    home = None
-    about = None
-    news = None
-    blog = None
-    contact = None
-    pages = {}#registered pages; eventually a .cfg maybe
+    EnableFileRead = False
+    pages = {}
     
-#content type examples
-#self.send_header('Content-type', 'text/html')
-#self.send_header("Content-type", 'text/plain')
-#self.send_header("Content-type", 'application/octet-stream')
+    #content type examples
+    #self.send_header('Content-type', 'text/html')
+    #self.send_header("Content-type", 'text/plain')
+    #self.send_header("Content-type", 'application/octet-stream')
     
     def do_AuthenticateHeader(self):
         self.send_response(401)
@@ -74,7 +67,7 @@ class TestHandler(BaseHTTPRequestHandler):
         #parse URI
         print(self.path)
         o = urlparse(self.path)
-        #choose page    
+        #Stored paged, dynamic pages and content in the future 
         if o.path.lower():# in self.pages and self.EnableFileRead == True:
             if o.path.lower() == '/' or o.path.lower() == '/index.html':
                 i = self.pages['index'],0
@@ -109,14 +102,22 @@ class TestHandler(BaseHTTPRequestHandler):
                 return
 
         #Give 200 OK
-        self.do_200()
+        #self.do_200()
+        #if page not None:
+            #if head ==
         
         #Write data to client
-        if page != None and head == False:
-            self.do_200()
-            print(page)
-            self.wfile.write(page)
-        return
+        if page == None:
+            self.send_error(404, "File not found")
+            return
+        else:
+            if head == False:
+                self.do_200()
+                #print(page)
+                self.wfile.write(page)
+            else:
+                self.do_200()
+                return
 
     def copyfile(self, source, outputfile): #not used now but may be later
         shutil.copyfileobj(source, outputfile)
@@ -129,7 +130,7 @@ def BuildPageCache():
     odict = {}
     blobs = []
     pages = []
-    
+
     with open("index.html","rb") as ifile:
         blobs.append(ifile.read())
         pages.append('index')
